@@ -1,0 +1,559 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>BILLIE · R&D Pulse Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Caveat:wght@500;600;700&family=Kalam:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#282828;
+    --ink-soft:#5a5a5a;
+    --muted:#8a8a8a;
+    --paper:#f6f4ef;
+    --paper-2:#efece5;
+    --accent:#8b8fd8;
+    --accent-ink:#5a5ec9;
+    --border:#dcdad2;
+    --font-ui:'Space Grotesk',system-ui,sans-serif;
+    --font-hand:'Kalam','Caveat',cursive;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;color:var(--ink);font-family:var(--font-ui);letter-spacing:-0.01em;
+    background:
+      radial-gradient(circle at 20% 10%, #fbf9f3 0%, transparent 40%),
+      radial-gradient(circle at 80% 80%, #f1eee4 0%, transparent 40%),
+      var(--paper);
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* Top bar */
+  .bar{
+    position:sticky;top:0;z-index:20;background:rgba(246,244,239,.88);
+    backdrop-filter:blur(10px) saturate(140%);
+    border-bottom:1px solid var(--border);
+    display:flex;align-items:center;gap:18px;padding:14px 22px;flex-wrap:wrap;
+  }
+  .brand{display:flex;align-items:center;gap:10px;margin-right:8px}
+  .brand .logo{font-weight:700;letter-spacing:.12em;font-size:16px;color:var(--ink)}
+  .brand .sep{color:var(--border);font-size:18px}
+  .brand .title{font-weight:600;font-size:15px;color:var(--ink-soft)}
+  .count{
+    font-size:13px;color:var(--muted);
+    border:1px solid var(--border);background:#fff;border-radius:999px;
+    padding:6px 12px;font-variant-numeric:tabular-nums;
+  }
+  .bar-right{margin-left:auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .btn{
+    appearance:none;border:1px solid var(--border);background:#fff;cursor:pointer;
+    font:inherit;font-size:13px;font-weight:600;color:var(--ink);
+    padding:8px 12px;border-radius:8px;display:inline-flex;align-items:center;gap:8px;
+    transition:transform .12s ease, border-color .15s ease;
+  }
+  .btn:hover{border-color:#b8b4a6;transform:translateY(-1px)}
+  .btn.primary{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .btn.primary:hover{background:#000}
+
+  /* Section filter chips */
+  .chips{display:flex;gap:6px;flex-wrap:wrap;padding:10px 22px 4px;border-bottom:1px solid var(--border);background:rgba(246,244,239,.6)}
+  .chip{
+    appearance:none;border:1px solid var(--border);background:#fff;
+    font:inherit;font-size:12px;font-weight:600;color:var(--ink-soft);
+    padding:6px 10px;border-radius:999px;cursor:pointer;
+    display:inline-flex;align-items:center;gap:6px;
+    transition:all .12s ease;
+  }
+  .chip .dot{width:8px;height:8px;border-radius:50%;background:var(--border)}
+  .chip:hover{color:var(--ink)}
+  .chip.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .chip.active .dot{border:1.5px solid #fff}
+
+  /* Board canvas */
+  .board{
+    padding:28px 22px 160px;max-width:1400px;margin:0 auto;
+    display:grid;grid-template-columns:repeat(auto-fill, minmax(240px, 1fr));
+    gap:26px 22px;
+  }
+
+  /* Sticky note */
+  .sticky{
+    position:relative;padding:18px 18px 44px;min-height:180px;
+    border-radius:3px;cursor:pointer;
+    font-family:var(--font-hand);color:#1f1f1f;
+    box-shadow:
+      0 1px 1px rgba(0,0,0,.04),
+      0 8px 24px rgba(0,0,0,.10);
+    transition:transform .18s cubic-bezier(.2,.8,.2,1), box-shadow .18s ease;
+    will-change:transform;
+    overflow:hidden;
+  }
+  .sticky:hover{
+    transform:rotate(0deg) scale(1.03) translateY(-2px) !important;
+    box-shadow:0 2px 2px rgba(0,0,0,.05), 0 18px 40px rgba(0,0,0,.15);
+    z-index:2;
+  }
+  .sticky .section-tag{
+    display:inline-block;font-family:var(--font-ui);
+    font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+    color:rgba(0,0,0,.55);margin-bottom:8px;
+  }
+  .sticky .body{
+    font-size:17px;line-height:1.35;white-space:pre-wrap;
+    word-break:break-word;overflow-wrap:anywhere;
+  }
+  .sticky .body.short{font-size:22px;line-height:1.3}
+  .sticky .body.long{font-size:15px;line-height:1.4}
+  .sticky .author{
+    position:absolute;left:18px;right:18px;bottom:12px;
+    font-family:var(--font-ui);font-size:11px;color:rgba(0,0,0,.55);
+    font-weight:600;letter-spacing:.02em;
+    display:flex;justify-content:space-between;align-items:center;
+  }
+  .sticky .tape{
+    position:absolute;top:-10px;left:50%;transform:translateX(-50%) rotate(-2deg);
+    width:56px;height:18px;background:rgba(255,255,255,.5);
+    border:1px solid rgba(0,0,0,.06);
+  }
+  .sticky .emoji{font-size:44px;line-height:1;margin:6px 0 10px}
+
+  /* Color variants keyed by section */
+  .c-pulse       { background:#FDE68A; }
+  .c-planning    { background:#BFDBFE; }
+  .c-releasing   { background:#FECACA; }
+  .c-data        { background:#DDD6FE; }
+  .c-speed       { background:#FED7AA; }
+  .c-investment  { background:#BBF7D0; }
+  .c-ai          { background:#FBCFE8; }
+  .c-team        { background:#A7F3D0; }
+  .c-open        { background:#E5E7EB; }
+  .c-bonus       { background:#FEF3C7; }
+
+  /* Empty state */
+  .empty{
+    max-width:640px;margin:80px auto;padding:36px 32px;border:1.5px dashed var(--border);
+    border-radius:14px;background:rgba(255,255,255,.5);text-align:center;
+  }
+  .empty h1{font-size:28px;margin:0 0 10px;letter-spacing:-0.02em}
+  .empty p{color:var(--ink-soft);margin:0 0 18px;line-height:1.5}
+  .empty .actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+  .empty code{background:#fff;border:1px solid var(--border);border-radius:6px;padding:2px 6px;font-size:13px}
+
+  /* Modal */
+  .modal-backdrop{
+    position:fixed;inset:0;background:rgba(20,20,20,.55);backdrop-filter:blur(4px);
+    display:none;align-items:center;justify-content:center;padding:24px;z-index:50;
+  }
+  .modal-backdrop.show{display:flex}
+  .modal{
+    background:#fff;border-radius:14px;max-width:620px;width:100%;
+    max-height:85vh;overflow:auto;padding:24px 26px;
+    box-shadow:0 30px 80px rgba(0,0,0,.25);
+  }
+  .modal h2{margin:0 0 10px;font-size:20px}
+  .modal textarea{
+    width:100%;min-height:180px;border:1px solid var(--border);border-radius:8px;
+    padding:12px;font:14px var(--font-ui);resize:vertical;
+  }
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
+  .modal .hint{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.5}
+
+  /* Detail modal sticky-ish */
+  .detail .section-tag{
+    font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--accent-ink);margin:0 0 6px;
+  }
+  .detail .q{font-size:16px;color:var(--ink-soft);margin:0 0 12px;line-height:1.4}
+  .detail .a{font-family:var(--font-hand);font-size:22px;line-height:1.35;color:var(--ink);white-space:pre-wrap}
+  .detail .by{margin-top:14px;font-size:12px;color:var(--muted)}
+
+  /* Toast */
+  .toast{
+    position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(18px);
+    background:var(--ink);color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;
+    opacity:0;transition:all .25s ease;z-index:60;pointer-events:none;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  @media (max-width:640px){
+    .board{grid-template-columns:repeat(auto-fill, minmax(180px, 1fr));gap:20px 14px}
+    .sticky{min-height:150px}
+  }
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <div class="brand">
+    <img class="logo" src="./billie-logo.svg" alt="BILLIE" style="height:18px;width:auto;display:block" />
+    <span class="sep">/</span>
+    <span class="title">R&amp;D Pulse Board</span>
+  </div>
+  <div class="count" id="count">0 responses</div>
+  <div class="bar-right">
+    <button class="btn" id="refreshBtn" title="Refresh from backend">↻ Refresh</button>
+    <button class="btn" id="addBtn">+ Paste response</button>
+    <button class="btn primary" id="shareBtn">Share this board</button>
+  </div>
+</header>
+
+<div class="chips" id="chips">
+  <button class="chip active" data-section="all"><span class="dot" style="background:#999"></span>All</button>
+</div>
+
+<main id="boardEl">
+  <div class="empty" id="empty">
+    <h1>No responses yet</h1>
+    <p>Responses will appear here as soft sticky notes, color-coded by section.<br>
+    To pipe in submissions, add <code>?api=YOUR_URL</code> to this page's URL, or paste one in manually.</p>
+    <div class="actions">
+      <button class="btn primary" id="demoBtn">Load demo data</button>
+      <button class="btn" id="emptyAddBtn">Paste a response</button>
+    </div>
+  </div>
+</main>
+
+<!-- Paste dialog -->
+<div class="modal-backdrop" id="pasteModal">
+  <div class="modal">
+    <h2>Paste response JSON</h2>
+    <p class="hint">Paste either a single response object, or an array of response objects. You can also paste a share link from the survey (starts with <code>#r=</code>).</p>
+    <textarea id="pasteArea" placeholder='{"name":"…","answers":{"bench_rating":"5", …}}  OR  [{…},{…}]  OR  https://your-board.example/#r=BASE64'></textarea>
+    <div class="modal-actions">
+      <button class="btn" data-close-modal>Cancel</button>
+      <button class="btn primary" id="pasteConfirm">Add to board</button>
+    </div>
+  </div>
+</div>
+
+<!-- Detail dialog -->
+<div class="modal-backdrop" id="detailModal">
+  <div class="modal detail" id="detailContent"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  /* ---------- Question catalog ---------- */
+  const SECTIONS = {
+    pulse:      { label:'Pulse check',        klass:'c-pulse',       color:'#FDE68A' },
+    planning:   { label:'Planning',           klass:'c-planning',    color:'#BFDBFE' },
+    releasing:  { label:'Releasing',          klass:'c-releasing',   color:'#FECACA' },
+    data:       { label:'Data & metrics',     klass:'c-data',        color:'#DDD6FE' },
+    speed:      { label:'Speed',              klass:'c-speed',       color:'#FED7AA' },
+    ai:         { label:'Agents for internal execution', klass:'c-ai', color:'#FBCFE8' },
+    team:       { label:'Team',               klass:'c-team',        color:'#A7F3D0' },
+    open:       { label:'Open floor',         klass:'c-open',        color:'#E5E7EB' },
+    bonus:      { label:'Bonus',              klass:'c-bonus',       color:'#FEF3C7' },
+  };
+
+  const QUESTIONS = {
+    bench_rating:    { section:'pulse',      q:'Execution level vs previous company',        kind:'scale' },
+    bench_strong:    { section:'pulse',      q:'Where are we strong?' },
+    bench_weak:      { section:'pulse',      q:'Where are we weak?' },
+    plan_clarity:    { section:'planning',   q:"Clarity on why you're working on what",      kind:'choice' },
+    collab_product:  { section:'planning',   q:"What do you need from Product you're not getting?" },
+    plan_improve:    { section:'planning',   q:'How would you improve planning?' },
+    rel_difficulty:  { section:'releasing',  q:'How hard is it to get to prod?',             kind:'choice' },
+    rel_quality:     { section:'releasing',  q:'Quality of what we release',                 kind:'choice' },
+    rel_change:      { section:'releasing',  q:'What would you change about the release process?' },
+    data_should:     { section:'data',       q:'What metrics should we track?' },
+    plan_context:    { section:'speed',      q:'Context-switching level',                    kind:'slider' },
+    unplanned:       { section:'speed',      q:'Share of time on unplanned work',             kind:'choice' },
+    speed:           { section:'speed',      q:'What would help us ship faster?' },
+    invest_deprioritise: { section:'planning', q:'R&D efforts to deprioritise or stop' },
+    ai_agents:       { section:'ai',         q:'Where could agents run internal execution work?' },
+    hire_role:       { section:'team',       q:'If we could hire one more role, which?' },
+    open:            { section:'open',       q:'Anything we forgot to ask about' },
+    bonus:           { section:'bonus',      q:'One free week — what would you work on?' },
+  };
+
+  /* ---------- State ---------- */
+  const state = {
+    responses: [],            // array of {name, submittedAt, answers:{key:val}}
+    activeSection: 'all',
+  };
+
+  /* ---------- Rendering ---------- */
+  const boardEl   = document.getElementById('boardEl');
+  const emptyEl   = document.getElementById('empty');
+  const countEl   = document.getElementById('count');
+  const chipsEl   = document.getElementById('chips');
+  const toast     = document.getElementById('toast');
+
+  function flashToast(msg){
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(()=>toast.classList.remove('show'), 2000);
+  }
+
+  function formatValue(key, val){
+    if(val==null || String(val).trim()==='') return null;
+    const def = QUESTIONS[key] || {};
+    const s = String(val).trim();
+    if(def.kind === 'scale'){
+      const n = parseInt(s,10)||0;
+      return { emoji:'💪'.repeat(Math.max(1,Math.min(5,n))), text:`${n}/5` };
+    }
+    if(def.kind === 'slider'){
+      const n = parseInt(s,10); if(isNaN(n)) return { text:s };
+      const emj = n<=1?'🧘':n<=3?'🙂':n<=5?'😐':n<=7?'😵‍💫':n<=9?'🤯':'🌀';
+      return { emoji:emj, text:`${n}/10` };
+    }
+    if(def.kind === 'choice'){
+      return { text:s };
+    }
+    return { text:s };
+  }
+
+  function rotationFor(idx){
+    const r = [-3.5,-2,-1,0.5,1.8,2.6,-1.2,0,-2.8,1.4,3,-0.6];
+    return r[idx % r.length];
+  }
+
+  function renderChips(){
+    chipsEl.innerHTML = '';
+    const mk = (key, label, color) => {
+      const b = document.createElement('button');
+      b.className = 'chip' + (state.activeSection===key?' active':'');
+      b.dataset.section = key;
+      b.innerHTML = `<span class="dot" style="background:${color||'#999'}"></span>${label}`;
+      b.onclick = () => { state.activeSection = key; render(); };
+      return b;
+    };
+    chipsEl.appendChild(mk('all','All','#8a8a8a'));
+    for(const [k,s] of Object.entries(SECTIONS)){
+      chipsEl.appendChild(mk(k, s.label, s.color));
+    }
+  }
+
+  function render(){
+    renderChips();
+    const notes = [];
+    state.responses.forEach((r, ri) => {
+      const author = r.name && r.name.trim() ? r.name.trim() : 'Anon';
+      const when = r.submittedAt ? new Date(r.submittedAt).toLocaleDateString(undefined, {month:'short', day:'numeric'}) : '';
+      for(const [key, rawVal] of Object.entries(r.answers||{})){
+        const def = QUESTIONS[key]; if(!def) continue;
+        if(state.activeSection !== 'all' && def.section !== state.activeSection) continue;
+        const fv = formatValue(key, rawVal); if(!fv) continue;
+        notes.push({
+          section:def.section, q:def.q, fv, author, when, key, rawVal,
+          rIdx: ri, author_id:`${author}·${ri}`,
+        });
+      }
+    });
+
+    const total = notes.length;
+    const peopleCount = new Set(state.responses.map((r,i)=>(r.name||'')+('·'+i))).size;
+    countEl.textContent = `${total} ${total===1?'sticky':'stickies'} · ${state.responses.length} ${state.responses.length===1?'response':'responses'}`;
+
+    if(total === 0 && state.responses.length === 0){
+      boardEl.innerHTML = '';
+      boardEl.appendChild(emptyEl);
+      wireEmptyButtons();
+      return;
+    }
+
+    const grid = document.createElement('div');
+    grid.className = 'board';
+    notes.forEach((n, idx) => {
+      const sec = SECTIONS[n.section] || {};
+      const note = document.createElement('div');
+      note.className = `sticky ${sec.klass||''}`;
+      note.style.transform = `rotate(${rotationFor(idx)}deg)`;
+      note.dataset.idx = idx;
+
+      const len = (n.fv.text||'').length;
+      const bodyClass = len < 40 ? 'short' : len > 180 ? 'long' : '';
+      const emojiHtml = n.fv.emoji ? `<div class="emoji">${n.fv.emoji}</div>` : '';
+
+      note.innerHTML = `
+        <span class="tape"></span>
+        <div class="section-tag">${sec.label||n.section}</div>
+        ${emojiHtml}
+        <div class="body ${bodyClass}">${escapeHtml(n.fv.text||'')}</div>
+        <div class="author"><span>— ${escapeHtml(n.author)}</span><span>${n.when}</span></div>
+      `;
+      note.addEventListener('click', ()=>openDetail(n));
+      grid.appendChild(note);
+    });
+
+    boardEl.innerHTML = '';
+    boardEl.appendChild(grid);
+  }
+
+  function escapeHtml(s){return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+  /* ---------- Detail modal ---------- */
+  const detailModal = document.getElementById('detailModal');
+  const detailContent = document.getElementById('detailContent');
+  function openDetail(n){
+    const sec = SECTIONS[n.section] || {};
+    detailContent.style.background = sec.color || '#fff';
+    detailContent.innerHTML = `
+      <div class="section-tag">${sec.label||n.section}</div>
+      <p class="q">${escapeHtml(n.q)}</p>
+      <p class="a">${n.fv.emoji?`<span style="font-size:32px;margin-right:8px">${n.fv.emoji}</span>`:''}${escapeHtml(n.fv.text||'')}</p>
+      <div class="by">— ${escapeHtml(n.author)} ${n.when?'· '+n.when:''}</div>
+      <div class="modal-actions"><button class="btn" data-close-modal>Close</button></div>
+    `;
+    detailModal.classList.add('show');
+  }
+  document.querySelectorAll('[data-close-modal]').forEach(b=>b.addEventListener('click', closeModals));
+  detailModal.addEventListener('click', e=>{ if(e.target===detailModal) closeModals(); });
+  document.getElementById('pasteModal').addEventListener('click', e=>{ if(e.target.id==='pasteModal') closeModals(); });
+  function closeModals(){
+    document.getElementById('pasteModal').classList.remove('show');
+    document.getElementById('detailModal').classList.remove('show');
+  }
+
+  /* ---------- Loading responses ---------- */
+  function addResponse(r){
+    // basic sanity
+    if(!r || typeof r !== 'object' || !r.answers) return false;
+    state.responses.push({
+      name: r.name || '',
+      submittedAt: r.submittedAt || new Date().toISOString(),
+      answers: r.answers || {},
+    });
+    return true;
+  }
+
+  function loadFromUrlHash(){
+    if(!location.hash.startsWith('#r=')) return false;
+    try{
+      const b64 = decodeURIComponent(location.hash.slice(3));
+      const json = atob(b64);
+      const obj = JSON.parse(json);
+      if(Array.isArray(obj)) obj.forEach(addResponse); else addResponse(obj);
+      return true;
+    }catch(e){ console.warn('bad hash payload', e); return false; }
+  }
+
+  async function loadFromApi(url){
+    try{
+      const res = await fetch(url, { cache:'no-cache' });
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      if(Array.isArray(data)) data.forEach(addResponse);
+      else if(data.responses && Array.isArray(data.responses)) data.responses.forEach(addResponse);
+      else addResponse(data);
+    }catch(e){
+      console.warn('api load failed', e);
+      flashToast('Could not load from backend — check the URL');
+    }
+  }
+
+  function loadDemo(){
+    const demo = [
+      { name:'Shani', submittedAt:new Date(Date.now()-1000*60*60*24).toISOString(), answers:{
+        bench_rating:'4', bench_strong:'Shipping velocity is genuinely great compared to my last place', bench_weak:'We over-commit in planning every single sprint',
+        plan_clarity:'Good enough', plan_context:'7',
+        rel_difficulty:"It's good enough", rel_quality:'Hit or miss', unplanned:'25–50%',
+        ai_agents:'PR triage, release-note drafts, standup summaries from Slack',
+        hire_role:'Backend engineer',
+        collab_product:'Sharper specs earlier — we reverse-engineer intent too often',
+        bonus:'Rebuild the CI pipeline end to end',
+      }},
+      { name:'Omri', submittedAt:new Date(Date.now()-1000*60*60*6).toISOString(), answers:{
+        bench_rating:'3', bench_weak:'Specs are sometimes vague, we backfill assumptions',
+        plan_clarity:'Not really', plan_context:'8',
+        rel_quality:'Buggy — regressions are common', unplanned:'More than 50%',
+        data_should:'Time-to-first-value per feature', speed:'Fewer meetings on Wednesdays',
+        ai_agents:'Auto-generating test cases, flaky-test triage, doc drift detection',
+        hire_role:'DevOps / Platform',
+        collab_product:'Prioritisation changes mid-sprint without context',
+      }},
+      { name:'Dana', submittedAt:new Date().toISOString(), answers:{
+        bench_rating:'5', plan_clarity:"Yes, it's fine", plan_context:'3',
+        rel_difficulty:'Pretty solid', rel_quality:'Mostly solid', rel_change:'Auto-rollback is still manual',
+        unplanned:'10–25%',
+        invest_deprioritise:'That one internal dashboard nobody opens — and the weekly status meeting',
+        collab_product:'More access to real customers for validation',
+        open:'Make on-call rotations more transparent', bonus:'Deep research week on vision models',
+      }},
+      { name:'Anon', submittedAt:new Date().toISOString(), answers:{
+        bench_rating:'2', plan_context:'9', hire_role:'Other: Technical writer',
+        rel_quality:'Buggy — regressions are common', unplanned:'More than 50%',
+        ai_agents:'Standup notes, bug-report triage, low-signal Slack summarisation', speed:'Smaller PRs, faster reviews',
+        collab_product:'A single source of truth for priorities — not 3 different docs',
+      }},
+    ];
+    demo.forEach(addResponse);
+    render();
+  }
+
+  /* ---------- Controls ---------- */
+  const pasteModal = document.getElementById('pasteModal');
+  const pasteArea  = document.getElementById('pasteArea');
+  document.getElementById('addBtn').addEventListener('click', ()=>{ pasteArea.value=''; pasteModal.classList.add('show'); pasteArea.focus(); });
+  function wireEmptyButtons(){
+    const a = document.getElementById('demoBtn');
+    const b = document.getElementById('emptyAddBtn');
+    if(a) a.onclick = ()=>{ loadDemo(); };
+    if(b) b.onclick = ()=>{ pasteArea.value=''; pasteModal.classList.add('show'); pasteArea.focus(); };
+  }
+  document.getElementById('pasteConfirm').addEventListener('click', ()=>{
+    const v = pasteArea.value.trim();
+    if(!v){ flashToast('Nothing to add'); return; }
+    let added = 0;
+    // support share-link (has #r=)
+    const hashMatch = v.match(/#r=([^\s]+)/);
+    if(hashMatch){
+      try{
+        const obj = JSON.parse(atob(decodeURIComponent(hashMatch[1])));
+        if(Array.isArray(obj)){ obj.forEach(o=>{ if(addResponse(o)) added++; }); }
+        else if(addResponse(obj)) added++;
+      }catch(e){ flashToast('Could not parse share link'); return; }
+    } else {
+      try{
+        const obj = JSON.parse(v);
+        if(Array.isArray(obj)){ obj.forEach(o=>{ if(addResponse(o)) added++; }); }
+        else if(addResponse(obj)) added++;
+      }catch(e){ flashToast('Invalid JSON — check the format'); return; }
+    }
+    if(added === 0){ flashToast('Nothing recognized'); return; }
+    flashToast(`Added ${added} response${added>1?'s':''}`);
+    closeModals();
+    render();
+  });
+
+  document.getElementById('shareBtn').addEventListener('click', async ()=>{
+    try{
+      await navigator.clipboard.writeText(location.href);
+      flashToast('Board link copied');
+    }catch(e){
+      flashToast('Copy failed — copy the URL manually');
+    }
+  });
+
+  document.getElementById('refreshBtn').addEventListener('click', ()=>{
+    const url = new URL(location.href);
+    const api = url.searchParams.get('api');
+    if(!api){ flashToast('No ?api=URL configured — pasting stays the fallback'); return; }
+    state.responses = [];
+    loadFromApi(api).then(render);
+  });
+
+  document.addEventListener('keydown', (e)=>{
+    if(e.key === 'Escape') closeModals();
+  });
+
+  /* ---------- Boot ---------- */
+  (async function boot(){
+    const url = new URL(location.href);
+    const api = url.searchParams.get('api');
+    const demoFlag = url.searchParams.get('demo');
+    let loaded = false;
+    if(api){ await loadFromApi(api); loaded = state.responses.length > 0; }
+    if(loadFromUrlHash()) loaded = true;
+    if(!loaded && demoFlag === '1'){ loadDemo(); return; }
+    render();
+  })();
+</script>
+</body>
+</html>

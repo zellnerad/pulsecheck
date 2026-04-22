@@ -1,0 +1,955 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>BILLIE · R&D Ways of Working Survey</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#282828;
+    --ink-soft:#5a5a5a;
+    --muted:#9a9a9a;
+    --bg:#ffffff;
+    --card:#fafafa;
+    --accent:#8b8fd8;          /* BILLIE lavender */
+    --accent-ink:#5a5ec9;
+    --accent-soft:#eef0fb;
+    --border:#ececec;
+    --ok:#282828;
+    --radius:10px;
+    --shadow:0 1px 0 rgba(0,0,0,.04), 0 20px 60px rgba(40,40,40,.06);
+    --font:'Space Grotesk','Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:var(--font);
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+    letter-spacing:-0.01em;
+  }
+
+  /* Top bar */
+  .topbar{
+    position:fixed;inset:0 0 auto 0;height:60px;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:0 28px;z-index:10;background:rgba(255,255,255,.85);
+    backdrop-filter:saturate(140%) blur(8px);
+    border-bottom:1px solid var(--border);
+  }
+  .logo{display:flex;align-items:center;gap:0;font-weight:700;letter-spacing:.02em}
+  .logo span{font-size:18px;color:var(--ink);letter-spacing:.12em;font-weight:700}
+  .counter{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+
+  /* Progress bar */
+  .progress{
+    position:fixed;top:60px;left:0;right:0;height:48px;background:transparent;z-index:9;pointer-events:none;
+  }
+  .progress .track{display:none}
+  .progress .bar{display:none}
+  .progress .billie{
+    position:absolute;bottom:2px;left:0%;width:40px;height:44px;
+    transform:translateX(-50%);
+    transition:left .55s cubic-bezier(.2,.8,.2,1);
+    will-change:left,transform;
+  }
+  .progress .billie svg{
+    width:100%;height:100%;display:block;
+    animation:billieBob 1.6s ease-in-out infinite;
+  }
+  .progress .billie .wheels{transform-origin:center;animation:billieRoll .9s linear infinite}
+  @keyframes billieBob{
+    0%,100%{transform:translateY(0)}
+    50%{transform:translateY(-2px)}
+  }
+  @keyframes billieRoll{
+    0%{transform:rotate(0)}
+    100%{transform:rotate(360deg)}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .progress .billie svg,.progress .billie .wheels{animation:none}
+  }
+
+  /* Stage */
+  .stage{
+    position:relative;min-height:100vh;display:flex;align-items:center;justify-content:center;
+    padding:120px 24px 140px;
+  }
+  .slide{
+    display:none;width:100%;max-width:720px;
+    animation:rise .5s cubic-bezier(.2,.8,.2,1) both;
+  }
+  .slide.active{display:block}
+  @keyframes rise{
+    from{opacity:0;transform:translateY(18px)}
+    to{opacity:1;transform:translateY(0)}
+  }
+
+  .kicker{
+    display:inline-flex;align-items:center;gap:8px;
+    font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--accent-ink);background:var(--accent-soft);
+    padding:6px 10px;border-radius:999px;margin-bottom:20px;
+  }
+  .kicker .n{color:var(--muted);font-weight:500}
+  .q{
+    font-size:clamp(28px,4.4vw,44px);line-height:1.12;letter-spacing:-0.02em;
+    font-weight:600;color:var(--ink);margin:0 0 14px;
+  }
+  .sub{
+    font-size:16px;color:var(--ink-soft);line-height:1.55;margin:0 0 28px;max-width:640px;
+  }
+  .sub strong{color:var(--ink)}
+  .sub ol{padding-left:20px;margin:10px 0 0}
+  .sub ol li{margin:6px 0}
+
+  textarea,input[type=text]{
+    width:100%;font:inherit;color:var(--ink);
+    border:none;border-bottom:2px solid var(--border);
+    background:transparent;outline:none;padding:10px 0;font-size:20px;
+    transition:border-color .2s ease;resize:none;
+  }
+  textarea{min-height:96px}
+  textarea:focus,input[type=text]:focus{border-bottom-color:var(--accent)}
+
+  .helper{margin-top:12px;font-size:13px;color:var(--muted)}
+
+  .actions{
+    margin-top:28px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  }
+  .btn{
+    appearance:none;border:none;cursor:pointer;font:inherit;font-weight:600;
+    background:var(--ok);color:#fff;padding:12px 20px;border-radius:var(--radius);
+    font-size:15px;display:inline-flex;align-items:center;gap:10px;
+    transition:transform .12s ease, background .2s ease, opacity .2s ease;
+  }
+  .btn:hover{transform:translateY(-1px)}
+  .btn:active{transform:translateY(0)}
+  .btn.secondary{background:transparent;color:var(--ink-soft);border:1px solid var(--border)}
+  .btn.secondary:hover{color:var(--ink);border-color:#d6d6d6}
+  .btn.ghost{background:transparent;color:var(--muted);padding:12px 10px}
+  .btn.ghost:hover{color:var(--ink)}
+  .btn .enter{opacity:.6;font-size:12px;font-weight:500}
+
+  .hint{font-size:13px;color:var(--muted)}
+
+  /* Nav arrows bottom right */
+  .nav{
+    position:fixed;right:20px;bottom:20px;display:flex;gap:6px;z-index:10;
+    background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden;
+    box-shadow:var(--shadow);
+  }
+  .nav button{
+    background:#fff;border:none;width:40px;height:40px;cursor:pointer;
+    color:var(--ink);display:grid;place-items:center;transition:background .15s;
+  }
+  .nav button:hover{background:#f3f3f3}
+  .nav button:disabled{opacity:.35;cursor:not-allowed}
+  .nav button svg{width:16px;height:16px}
+
+  /* Decorative grid squares (from Figma) */
+  .decor{position:fixed;pointer-events:none;z-index:0}
+  .decor .sq{position:absolute;background:rgba(204,204,204,.18)}
+  .decor.topleft{left:0;top:60px}
+  .decor.topleft .sq.a{left:0;top:0;width:77px;height:77px;opacity:.9}
+  .decor.topleft .sq.b{left:110px;top:77px;width:77px;height:77px;opacity:.6}
+  .decor.topleft .sq.c{left:0;top:154px;width:77px;height:77px;opacity:.4}
+  .decor.bottomright{right:0;bottom:0}
+  .decor.bottomright .sq.a{right:0;bottom:0;width:77px;height:77px;opacity:.7}
+  .decor.bottomright .sq.b{right:110px;bottom:0;width:77px;height:77px;opacity:.5}
+  .decor.bottomright .sq.c{right:0;bottom:77px;width:77px;height:77px;opacity:.4}
+  @media (max-width:640px){ .decor{display:none} }
+
+  /* Welcome slide */
+  .welcome .greet{
+    font-size:clamp(34px,6vw,56px);line-height:1.05;letter-spacing:-0.03em;
+    font-weight:600;margin:0 0 20px;
+  }
+  .welcome .greet .wave{display:inline-block;transform-origin:70% 70%;animation:wave 2.4s ease-in-out infinite}
+  @keyframes wave{
+    0%,60%,100%{transform:rotate(0deg)}
+    10%{transform:rotate(14deg)} 20%{transform:rotate(-8deg)}
+    30%{transform:rotate(14deg)} 40%{transform:rotate(-4deg)}
+    50%{transform:rotate(10deg)}
+  }
+  .welcome .lede{
+    font-size:17px;color:var(--ink-soft);line-height:1.55;max-width:640px;margin:0 0 22px;
+  }
+  .welcome .northstar{
+    border-left:3px solid var(--accent);background:var(--accent-soft);
+    padding:18px 20px;border-radius:0 10px 10px 0;max-width:640px;margin:0 0 18px;
+  }
+  .welcome .northstar h3{
+    margin:0 0 8px;font-size:14px;font-weight:700;
+    color:var(--accent-ink);letter-spacing:.02em;
+  }
+  .welcome .northstar p{
+    margin:0;font-size:15px;color:var(--ink);line-height:1.6;
+  }
+  .welcome .curious{
+    font-size:15px;color:var(--ink-soft);font-style:italic;margin:0 0 8px;max-width:640px;line-height:1.55;
+  }
+
+  /* Section divider slide */
+  .divider-slide{text-align:left}
+  .divider-slide .section-num{
+    font-size:13px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--muted);margin:0 0 12px;
+  }
+  .divider-slide .section-name{
+    font-size:clamp(40px,7vw,72px);line-height:1;letter-spacing:-0.03em;
+    font-weight:600;margin:0 0 16px;color:var(--ink);
+  }
+  .divider-slide .section-name em{font-style:normal;color:var(--accent-ink)}
+  .divider-slide .section-desc{
+    font-size:17px;color:var(--ink-soft);line-height:1.5;max-width:580px;margin:0 0 24px;
+  }
+  .divider-slide .rule{
+    width:80px;height:3px;background:var(--accent);margin:0 0 28px;border-radius:2px;
+  }
+
+  /* Emoji 1-5 scale */
+  .scale{
+    display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;
+    max-width:560px;margin:8px 0 6px;
+  }
+  .scale button{
+    appearance:none;cursor:pointer;font:inherit;
+    background:#fff;border:1.5px solid var(--border);border-radius:12px;
+    padding:18px 8px 14px;display:flex;flex-direction:column;align-items:center;gap:6px;
+    transition:transform .12s ease, border-color .15s ease, background .15s ease;
+  }
+  .scale button:hover{border-color:var(--accent);transform:translateY(-2px);background:#fff}
+  .scale button.selected{
+    border-color:var(--accent);background:var(--accent-soft);
+  }
+  .scale button .emj{font-size:28px;line-height:1;filter:grayscale(.2)}
+  .scale button.selected .emj{filter:none;transform:scale(1.08)}
+  .scale button:nth-child(1) .emj{opacity:.55}
+  .scale button:nth-child(2) .emj{opacity:.7}
+  .scale button:nth-child(3) .emj{opacity:.85}
+  .scale button:nth-child(4) .emj{opacity:1}
+  .scale button:nth-child(5) .emj{opacity:1;font-size:32px}
+  .scale button.selected .emj{opacity:1}
+  .scale button .num{font-size:14px;font-weight:600;color:var(--ink)}
+  .scale-legend{
+    display:flex;justify-content:space-between;max-width:560px;font-size:12px;
+    color:var(--muted);margin-top:4px;
+  }
+  @media (max-width:560px){
+    .scale button{padding:14px 4px 10px}
+    .scale button .emj{font-size:24px}
+  }
+
+  /* Single-select choice list */
+  .choices{
+    display:flex;flex-direction:column;gap:10px;max-width:520px;margin:8px 0 6px;
+  }
+  .choices button{
+    appearance:none;cursor:pointer;font:inherit;text-align:left;
+    background:#fff;border:1.5px solid var(--border);border-radius:12px;
+    padding:16px 18px;display:flex;align-items:center;gap:14px;
+    transition:transform .12s ease, border-color .15s ease, background .15s ease;
+    font-size:16px;font-weight:500;color:var(--ink);
+  }
+  .choices button:hover{border-color:var(--accent);transform:translateY(-1px)}
+  .choices button.selected{border-color:var(--accent);background:var(--accent-soft)}
+  .choices button .emj{font-size:24px;line-height:1}
+  .choices button .label{flex:1}
+  .choices button .kbd{
+    font-size:11px;color:var(--muted);
+    border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-weight:600;
+    letter-spacing:.04em;
+  }
+  .choices button.selected .kbd{border-color:var(--accent);color:var(--accent-ink)}
+
+  /* Slider */
+  .slider{max-width:560px;margin:20px 0 8px}
+  .slider input[type=range]{
+    -webkit-appearance:none;appearance:none;
+    width:100%;height:6px;border-radius:999px;outline:none;cursor:pointer;
+    background:linear-gradient(to right, var(--accent) 0%, var(--accent) var(--pct,50%), var(--border) var(--pct,50%), var(--border) 100%);
+  }
+  .slider input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;appearance:none;
+    width:28px;height:28px;border-radius:50%;background:#fff;
+    border:2.5px solid var(--accent);cursor:pointer;
+    box-shadow:0 2px 10px rgba(40,40,40,.15);
+    transition:transform .12s ease, box-shadow .15s ease;
+  }
+  .slider input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.08)}
+  .slider input[type=range]::-webkit-slider-thumb:active{transform:scale(1.12)}
+  .slider input[type=range]::-moz-range-thumb{
+    width:28px;height:28px;border-radius:50%;background:#fff;
+    border:2.5px solid var(--accent);cursor:pointer;
+    box-shadow:0 2px 10px rgba(40,40,40,.15);
+  }
+  .slider-display{
+    margin-top:18px;display:flex;align-items:center;gap:16px;
+  }
+  .slider-display .emj{font-size:44px;line-height:1;transition:transform .2s ease}
+  .slider-display .num{
+    font-size:34px;font-weight:600;color:var(--ink);
+    font-variant-numeric:tabular-nums;letter-spacing:-0.02em;
+  }
+  .slider-display .lbl{font-size:14px;color:var(--ink-soft);line-height:1.35}
+  .slider-ends{
+    display:flex;justify-content:space-between;margin-top:10px;
+    font-size:12px;color:var(--muted);max-width:560px;
+  }
+
+  /* Thank-you slide */
+  .done .emoji{font-size:56px;margin-bottom:8px}
+  .summary{
+    margin-top:22px;border:1px solid var(--border);border-radius:12px;background:#fff;
+    padding:18px 20px;max-height:320px;overflow:auto;
+  }
+  .summary h4{margin:0 0 4px;font-size:13px;font-weight:600;color:var(--accent-ink);text-transform:uppercase;letter-spacing:.06em}
+  .summary p{margin:0 0 14px;white-space:pre-wrap;color:var(--ink);font-size:14px;line-height:1.5}
+  .summary p.empty{color:var(--muted);font-style:italic}
+
+  .toast{
+    position:fixed;left:50%;bottom:86px;transform:translateX(-50%) translateY(20px);
+    background:var(--ink);color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;
+    opacity:0;transition:all .25s ease;z-index:20;pointer-events:none;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<!-- Decorative squares -->
+<div class="decor topleft" aria-hidden="true">
+  <div class="sq a"></div><div class="sq b"></div><div class="sq c"></div>
+</div>
+<div class="decor bottomright" aria-hidden="true">
+  <div class="sq a"></div><div class="sq b"></div><div class="sq c"></div>
+</div>
+
+<!-- Top bar -->
+<header class="topbar">
+  <div class="logo" aria-label="BILLIE">
+    <img src="./billie-logo.svg" alt="BILLIE" style="height:20px;width:auto;display:block" />
+  </div>
+  <div class="counter" id="counter">—</div>
+</header>
+<div class="progress" aria-hidden="true" style="display:none">
+  <div class="bar" id="bar"></div>
+</div>
+
+<!-- Stage -->
+<main class="stage" id="stage">
+
+  <!-- 0: Welcome -->
+  <section class="slide welcome active" data-index="0" data-divider="1">
+    <div class="kicker">R&amp;D Ways of Working</div>
+    <h1 class="greet">Hey team <span class="wave">👋</span></h1>
+    <p class="lede">As the founding team — the habits we set now become the org the next person walks into. This survey is a gut-check on how <em>we</em> work together today, and what we want to keep, change, or build as we grow. No wrong answers — the more candid, the better.</p>
+
+    <div class="northstar">
+      <h3>Our north star</h3>
+      <p>Ship fast on features that create real impact. Everyone on the team should have (1) the context on <em>why</em> we're doing what we're doing, (2) the tools to measure whether it worked, (3) the degrees of freedom to plan and execute their own work, and (4) the space to learn from each other and deliver work they're proud of.</p>
+    </div>
+
+    <p class="curious">Curious where you think we're living up to that — and where we're not.</p>
+
+    <div class="actions">
+      <button class="btn" data-next>Start <span class="enter">press Enter ↵</span></button>
+      <span class="hint">Takes ~5 minutes. Answer any or all.</span>
+    </div>
+  </section>
+
+  <!-- Questions -->
+  <!-- Section divider: Pulse check -->
+  <section class="slide divider-slide" data-divider="1">
+    <p class="section-num">Section 1 of 8</p>
+    <div class="rule"></div>
+    <h2 class="section-name"><em>Pulse / perception check</em></h2>
+    <p class="section-desc">A quick gut check on how we're doing.</p>
+    <div class="actions"><button class="btn" data-next>Continue <span class="enter">↵</span></button></div>
+  </section>
+
+  <!-- Pulse check -->
+  <section class="slide" data-section="Pulse check" data-key="bench_rating">
+    <div class="kicker"><span>Pulse check</span><span class="n">· 1 of 3</span></div>
+    <h2 class="q">How would you rate our execution level?</h2>
+    <div class="choices" role="radiogroup" aria-label="Execution level">
+      <button type="button" data-val="We waste a lot of time where we shouldn't" role="radio" aria-checked="false"><span class="emj">🐢</span><span class="label">We waste a lot of time where we shouldn't</span><span class="kbd">1</span></button>
+      <button type="button" data-val="We could do better" role="radio" aria-checked="false"><span class="emj">🤔</span><span class="label">We could do better</span><span class="kbd">2</span></button>
+      <button type="button" data-val="Improving" role="radio" aria-checked="false"><span class="emj">📈</span><span class="label">Improving</span><span class="kbd">3</span></button>
+      <button type="button" data-val="Very fast" role="radio" aria-checked="false"><span class="emj">🚀</span><span class="label">Very fast</span><span class="kbd">4</span></button>
+    </div>
+    <div class="actions"><button class="btn" data-next>OK <span class="enter">↵</span></button><span class="hint">Tap a choice or press 1–4</span></div>
+  </section>
+
+  <section class="slide" data-section="Pulse check" data-key="bench_strong">
+    <div class="kicker"><span>Pulse check</span><span class="n">· 2 of 3</span></div>
+    <h2 class="q">Where are we strong?</h2>
+    <textarea placeholder="What's working well…"></textarea>
+    <div class="actions"><button class="btn" data-next>OK <span class="enter">↵</span></button></div>
+  </section>
+
+  <section class="slide" data-section="Pulse check" data-key="bench_weak">
+    <div class="kicker"><span>Pulse check</span><span class="n">· 3 of 3</span></div>
+    <h2 class="q">Where are we weak?</h2>
+    <textarea placeholder="What needs work…"></textarea>
+    <div class="actions"><button class="btn" data-next>OK <span class="enter">↵</span></button></div>
+  </section>
+
+  <!-- Section divider: Planning -->
+  <section class="slide divider-slide" data-divider="1">
+    <p class="section-num">Section 2 of 8</p>
+    <div class="rule"></div>
+    <h2 class="section-name"><em>Planning</em></h2>
+    <p class="section-desc">How we decide what to build and how we line up the work.</p>
+    <div class="actions"><button class="btn" data-next>Continue <span class="enter">↵</span></button></div>
+  </section>
+
+  <!-- Planning -->
+  <section class="slide" data-section="Planning" data-key="plan_clarity">
+    <div class="kicker"><span>Planning</span><span class="n">· 1 of 3</span></div>
+    <h2 class="q">Do you have clarity on <em>why</em> you're working on what you're working on?</h2>
+    <div class="choices" role="radiogroup" aria-label="Clarity on the why">
+      <button type="button" data-val="Yes, it's fine" role="radio" aria-checked="false"><span class="emj">🎯</span><span class="label">Yes, it's fine</span><span class="kbd">1</span></button>
+      <button type="button" data-val="Good enough" role="radio" aria-checked="false"><span class="emj">👌</span><span class="label">Good enough</span><span class="kbd">2</span></button>
+      <button type="button" data-val="Not really" role="radio" aria-checked="false"><span class="emj">🤔</span><span class="label">Not really</span><span class="kbd">3</span></button>
+    </div>
+    <div class="actions"><button class="btn" data-next>OK <span class="enter">↵</span></button><span class="hint">Tap a choice or press 1–3</span></div>
+  </section>
+
+  <section class="slide" data-section="Planning" data-key="collab_product">
+    <div class="kicker"><span>Planning</span><span class="n">· 2 of 4</span></div>
+    <h2 class="q">What do you need from Product that you're not getting?</h2>
+    <textarea placeholder="Clarity, specs, prioritisation, decisions, access to users…"></textarea>
+    <div class="actions"><button class="btn" data-next>OK <span class="enter">↵</span></button></div>
+  </section>
+
+  <section class="slide" data-section="Planning" data-key="invest_deprioritise">
+    <div class="kicker"><span>Planning</span><span class="n">· 3 of 4</span></div>
+    <h2 class="q">Which R&amp;D efforts should we deprioritise or stop?</h2>
+    <textarea placeholder="Where we're over-investing or spending on the wrong things…"></textarea>
+    <div class="actions"><button class="btn" data-next>OK <span class="enter">↵</span></button></div>
+  </section>
+
+  <section class="slide" data-section="Planning" data-key="plan_improve">
+    <div class="kicker"><span>Planning</span><span class="n">· 4 of 4</span></div>
+    <h2 class="q">How would you improve our planning process?</h2>
+    <textarea placeholder="Concrete ideas welcome…"></textarea>
+    <div class="actions"><button class="btn" data-next>OK <span class="enter">↵</span></button></div>
+  </section>
+
+  <!-- Section divider: Releasing -->
+  <section class="slide divider-slide" data-divider="1">
+    <p class="section-num">Section 3 of 8</p>
+    <div class="rule"></div>
+    <h2 class="section-name"><em>Releasing</em></h2>
+    <p class="section-desc">From merged code to production — what the path looks like today.</p>
+    <div class="actions"><button class="btn" data-next>Continue <span class="enter">↵</span></button></div>
+  </section>
+
+  <!-- Releasing -->
+  <section class="slide" data-section="Releasing" data-key="rel_difficulty">
+    <div class="kicker"><span>Releasing</span><span class="n">· 1 of 3</span></div>
+    <h2 class="q">How hard is it to get something to production today?</h2>
+    <div class="choices" role="radiogroup" aria-label="Release difficulty">
+      <button type="button" data-val="My god" role="radio" aria-checked="false"><span class="emj">😱</span><span class="label">My god</span><span class="kbd">1</span></button>
+      <button type="button" data-val="Depends on what" role="radio" aria-checked="false"><span class="emj">🤷</span><span class="label">Depends on what</span><span class="kbd">2</span></button>
+      <button type="button" data-val="It's good enough" role="radio" aria-checked="false"><span class="emj">👌</span><span class="label">It's good enough</span><span class="kbd">3</span></button>
+      <button type="button" data-val="Pretty solid" role="radio" aria-checked="false"><span class="emj">🚀</span><span class="label">Pretty solid</span><span class="kbd">4</span></button>
+    </div>
+    <div class="actions"><button class="btn" data-next>OK <span class="enter">↵</span></button><span class="hint">Tap a choice or press 1–4</span></div>
+  </section>
+
+  <section class="slide" data-section="Releasing" data-key="rel_quality">
+    <div class="kicker"><span>Releasing</span><span class="n">· 2 of 3</span></div>
+    <h2 class="q">How would you rate the quality of what we release?</h2>
+    <div class="choices" role="radiogroup" aria-label="Release quality">
+      <button type="button" data-val="Buggy — regressions are common" role="radio" aria-checked="false"><span class="emj">🐛</span><span class="label">Buggy — regressions are common</span><span class="kbd">1</span></button>
+      <button type="button" data-val="Hit or miss" role="radio" aria-checked="false"><span class="emj">🎲</span><span class="label">Hit or miss</span><span class="kbd">2</span></button>
+      <button type="button" data-val="Mostly solid" role="radio" aria-checked="false"><span class="emj">👍</span><span class="label">Mostly solid</span><span class="kbd">3</span></button>
+      <button type="button" data-val="High quality — rarely breaks" role="radio" aria-checked="false"><span class="emj">💎</span><span class="label">High quality — rarely breaks</span><span class="kbd">4</span></button>
+    </div>
+    <div class="actions"><button class="btn" data-next>OK <span class="enter">↵</span></button><span class="hint">Tap a choice or press 1–4</span></div>
+  </section>
+
+  <section class="slide" data-section="Releasing" data-key="rel_change">
+    <div class="kicker"><span>Releasing</span><span class="n">· 3 of 3</span></div>
+    <h2 class="q">What would you change about our release process?</h2>
+    <textarea placeholder="What would unlock speed or safety…"></textarea>
+    <div class="actions"><button class="btn" data-next>OK <span class="enter">↵</span></button></div>
+  </section>
+
+  <!-- Section divider: Data -->
+  <section class="slide divider-slide" data-divider="1">
+    <p class="section-num">Section 4 of 8</p>
+    <div class="rule"></div>
+    <h2 class="section-name"><em>Data &amp; metrics</em></h2>
+    <p class="section-desc">How we measure whether what we ship actually worked.</p>
+    <div class="actions"><button class="btn" data-next>Continue <span class="enter">↵</span></button></div>
+  </section>
+
+  <!-- Data -->
+  <section class="slide" data-section="Data &amp; metrics" data-key="data_should">
+    <div class="kicker"><span>Data &amp; metrics</span></div>
+    <h2 class="q">What metrics <em>should</em> we be tracking that we aren't?</h2>
+    <textarea placeholder="The ones you wish you had…"></textarea>
+    <div class="actions"><button class="btn" data-next>OK <span class="enter">↵</span></button></div>
+  </section>
+
+  <!-- Section divider: Speed -->
+  <section class="slide divider-slide" data-divider="1">
+    <p class="section-num">Section 5 of 8</p>
+    <div class="rule"></div>
+    <h2 class="section-name"><em>Speed</em></h2>
+    <p class="section-desc">What would help us move faster without losing quality.</p>
+    <div class="actions"><button class="btn" data-next>Continue <span class="enter">↵</span></button></div>
+  </section>
+
+  <!-- Speed -->
+  <section class="slide" data-section="Speed" data-key="plan_context">
+    <div class="kicker"><span>Speed</span><span class="n">· 1 of 3</span></div>
+    <h2 class="q">How much context-switching are you dealing with day-to-day?</h2>
+    <div class="slider">
+      <input type="range" min="0" max="10" step="1" value="5" aria-label="Context-switching level from 0 to 10" />
+      <div class="slider-display">
+        <span class="emj" data-slider-emj>😐</span>
+        <div>
+          <div><span class="num" data-slider-num>5</span><span style="color:var(--muted);font-size:18px">/10</span></div>
+          <div class="lbl" data-slider-lbl>Some switching, manageable</div>
+        </div>
+      </div>
+      <div class="slider-ends"><span>0 — deep focus all day</span><span>10 — constantly switching</span></div>
+    </div>
+    <div class="actions"><button class="btn" data-next>OK <span class="enter">↵</span></button><span class="hint">Drag or use ← → arrows</span></div>
+  </section>
+
+  <section class="slide" data-section="Speed" data-key="unplanned">
+    <div class="kicker"><span>Speed</span><span class="n">· 2 of 3</span></div>
+    <h2 class="q">How much of your time goes to unplanned work — bugs, incidents, tech debt?</h2>
+    <div class="choices" role="radiogroup" aria-label="Unplanned work share">
+      <button type="button" data-val="Less than 10%" role="radio" aria-checked="false"><span class="emj">🟢</span><span class="label">&lt; 10%</span><span class="kbd">1</span></button>
+      <button type="button" data-val="10–25%" role="radio" aria-checked="false"><span class="emj">🟡</span><span class="label">10–25%</span><span class="kbd">2</span></button>
+      <button type="button" data-val="25–50%" role="radio" aria-checked="false"><span class="emj">🟠</span><span class="label">25–50%</span><span class="kbd">3</span></button>
+      <button type="button" data-val="More than 50%" role="radio" aria-checked="false"><span class="emj">🔴</span><span class="label">&gt; 50%</span><span class="kbd">4</span></button>
+    </div>
+    <div class="actions"><button class="btn" data-next>OK <span class="enter">↵</span></button><span class="hint">Tap a choice or press 1–4</span></div>
+  </section>
+
+  <section class="slide" data-section="Speed" data-key="speed">
+    <div class="kicker"><span>Speed</span><span class="n">· 3 of 3</span></div>
+    <h2 class="q">What would help us ship faster?</h2>
+    <textarea placeholder="Tools, decisions, structure, culture…"></textarea>
+    <div class="actions"><button class="btn" data-next>OK <span class="enter">↵</span></button></div>
+  </section>
+
+  <!-- Section divider: Agents -->
+  <section class="slide divider-slide" data-divider="1">
+    <p class="section-num">Section 6 of 8</p>
+    <div class="rule"></div>
+    <h2 class="section-name"><em>Agents for internal execution</em></h2>
+    <p class="section-desc">Where agents could run internal work for us — and free the team for higher-leverage work.</p>
+    <div class="actions"><button class="btn" data-next>Continue <span class="enter">↵</span></button></div>
+  </section>
+
+  <!-- Agents -->
+  <section class="slide" data-section="Agents for internal execution" data-key="ai_agents">
+    <div class="kicker"><span>Agents</span></div>
+    <h2 class="q">Where could agents take on <em>internal execution work</em> for us?</h2>
+    <textarea placeholder="Repetitive internal tasks an agent could run for us — PR triage, spec drafting, standup notes, release checks, support triage, data pulls…"></textarea>
+    <div class="actions"><button class="btn" data-next>OK <span class="enter">↵</span></button></div>
+  </section>
+
+  <!-- Section divider: Team -->
+  <section class="slide divider-slide" data-divider="1">
+    <p class="section-num">Section 7 of 8</p>
+    <div class="rule"></div>
+    <h2 class="section-name"><em>Team</em></h2>
+    <p class="section-desc">One quick question about how we grow from here.</p>
+    <div class="actions"><button class="btn" data-next>Continue <span class="enter">↵</span></button></div>
+  </section>
+
+  <!-- Team -->
+  <section class="slide" data-section="Team" data-key="hire_role">
+    <div class="kicker"><span>Team</span></div>
+    <h2 class="q">If we could hire one more team member — which role?</h2>
+    <div class="choices" role="radiogroup" aria-label="Which role to hire">
+      <button type="button" data-val="Backend engineer" role="radio" aria-checked="false"><span class="emj">⚙️</span><span class="label">Backend</span><span class="kbd">1</span></button>
+      <button type="button" data-val="Frontend engineer" role="radio" aria-checked="false"><span class="emj">🖥️</span><span class="label">Frontend</span><span class="kbd">2</span></button>
+      <button type="button" data-val="ML / AI engineer" role="radio" aria-checked="false"><span class="emj">🤖</span><span class="label">ML / AI</span><span class="kbd">3</span></button>
+      <button type="button" data-val="DevOps / Platform" role="radio" aria-checked="false"><span class="emj">🛠️</span><span class="label">DevOps / Platform</span><span class="kbd">4</span></button>
+      <button type="button" data-val="QA / Automation" role="radio" aria-checked="false"><span class="emj">🧪</span><span class="label">QA / Automation</span><span class="kbd">5</span></button>
+      <button type="button" data-val="Designer" role="radio" aria-checked="false"><span class="emj">🎨</span><span class="label">Designer</span><span class="kbd">6</span></button>
+      <button type="button" data-val="Technical PM" role="radio" aria-checked="false"><span class="emj">📋</span><span class="label">TPM</span><span class="kbd">7</span></button>
+      <button type="button" data-val="Data / Analytics" role="radio" aria-checked="false"><span class="emj">📊</span><span class="label">Data</span><span class="kbd">8</span></button>
+      <button type="button" data-val="Operator" role="radio" aria-checked="false"><span class="emj">🧭</span><span class="label">Operator</span><span class="kbd">9</span></button>
+      <button type="button" data-val="Other" data-other="1" role="radio" aria-checked="false"><span class="emj">✏️</span><span class="label">Other…</span><span class="kbd">0</span></button>
+    </div>
+    <input type="text" id="hire_role_other" placeholder="Specify the role…" style="display:none;margin-top:12px;width:100%;padding:14px 16px;font:inherit;font-size:16px;border:1.5px solid var(--border);border-radius:12px;background:#fff;color:var(--ink);outline:none" />
+    <div class="actions"><button class="btn" data-next>OK <span class="enter">↵</span></button><span class="hint">Tap a choice or press 1–9, 0 for other</span></div>
+  </section>
+
+  <!-- Section divider: Open -->
+  <section class="slide divider-slide" data-divider="1">
+    <p class="section-num">Section 8 of 8</p>
+    <div class="rule"></div>
+    <h2 class="section-name"><em>Open floor</em></h2>
+    <p class="section-desc">The things we didn't ask about but you still want to say.</p>
+    <div class="actions"><button class="btn" data-next>Continue <span class="enter">↵</span></button></div>
+  </section>
+
+  <!-- Open -->
+  <section class="slide" data-section="Open floor" data-key="open">
+    <div class="kicker"><span>Open floor</span></div>
+    <h2 class="q">Anything we forgot to ask about that you want to share?</h2>
+    <textarea placeholder="Anything on your mind…"></textarea>
+    <div class="actions"><button class="btn" data-next>OK <span class="enter">↵</span></button></div>
+  </section>
+
+  <!-- Section divider: Bonus -->
+  <section class="slide divider-slide" data-divider="1">
+    <p class="section-num">🎁 One last thing</p>
+    <div class="rule"></div>
+    <h2 class="section-name"><em>Bonus</em></h2>
+    <p class="section-desc">The fun one.</p>
+    <div class="actions"><button class="btn" data-next>Continue <span class="enter">↵</span></button></div>
+  </section>
+
+  <!-- Bonus -->
+  <section class="slide" data-section="Bonus" data-key="bonus">
+    <div class="kicker">🎁 Bonus</div>
+    <h2 class="q">If you had one full week to work on anything you wanted, what would it be?</h2>
+    <textarea placeholder="Dream scenario — no rules…"></textarea>
+    <div class="actions"><button class="btn" data-next>OK <span class="enter">↵</span></button></div>
+  </section>
+
+  <!-- Done -->
+  <section class="slide done" data-index="end">
+    <div class="emoji">🙏</div>
+    <h2 class="q">That's it — thank you!</h2>
+    <img src="https://media.giphy.com/media/TKL99l61UBNnnQSx4o/giphy.gif" alt="" style="max-width:320px;width:100%;border-radius:12px;margin:16px 0;" />
+    <p class="sub">Your answers are saved locally in this browser.</p>
+    <div class="actions">
+      <a class="btn" href="./board.html">View the team responses</a>
+    </div>
+    <div class="summary" id="summary" aria-live="polite"></div>
+  </section>
+
+</main>
+
+<!-- Bottom-right nav -->
+<nav class="nav" aria-label="Navigation">
+  <button id="prevBtn" title="Previous (Shift+Tab)" disabled>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+  </button>
+  <button id="nextBtn" title="Next (Enter)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+  </button>
+</nav>
+
+<div class="toast" id="toast">Copied to clipboard</div>
+
+<script>
+  const RECIPIENT_EMAIL = "adi@bellboy.co";
+  const SUBJECT = "BILLIE · R&D Ways of Working — Survey Response";
+
+  // --- Board integration ---------------------------------------------------
+  // BOARD_URL:   where the sticky-note board lives. Default: sibling file next to this one.
+  //              If you deploy the two files together (e.g. Netlify Drop), this works as-is.
+  // WEBHOOK_URL: OPTIONAL. If set (e.g. a Google Apps Script, Formspree, or Zapier URL),
+  //              responses will also POST to it so the board can fetch them with ?api=WEBHOOK_URL.
+  const BOARD_URL   = "./board.html";
+  const WEBHOOK_URL = "";
+
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const bar = document.getElementById('bar');
+  const billie = document.getElementById('billie');
+  const counter = document.getElementById('counter');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  const toast = document.getElementById('toast');
+
+  // Only question slides count toward "X / Y"
+  const questionSlides = slides.filter(s => s.dataset.key);
+  function questionPosition(slide){
+    return questionSlides.indexOf(slide) + 1; // 1-based
+  }
+
+  let idx = 0;
+  const answers = {};
+
+  function show(i){
+    slides[idx].classList.remove('active');
+    idx = Math.max(0, Math.min(slides.length-1, i));
+    const s = slides[idx];
+    s.classList.add('active');
+    // focus first input if any
+    const input = s.querySelector('textarea, input[type=text]');
+    if(input){
+      const key = s.dataset.key;
+      if(key && answers[key] != null) input.value = answers[key];
+      setTimeout(()=>input.focus(),60);
+    }
+    // reflect scale / choices selection
+    const group = s.querySelector('.scale, .choices');
+    if(group){
+      const key = s.dataset.key;
+      const val = key ? answers[key] : null;
+      group.querySelectorAll('button[data-val]').forEach(b=>{
+        const isSel = val != null && String(b.dataset.val) === String(val);
+        b.classList.toggle('selected', isSel);
+        b.setAttribute('aria-checked', isSel ? 'true' : 'false');
+      });
+    }
+    // restore slider value
+    const range = s.querySelector('input[type=range]');
+    if(range){
+      const key = s.dataset.key;
+      if(key && answers[key] != null) range.value = answers[key];
+      updateSlider(s);
+    }
+    // progress
+    const pct = Math.round((idx/(slides.length-1))*100);
+    bar.style.width = pct + '%';
+    if(billie) billie.style.left = pct + '%';
+    // counter text
+    if(idx===0) counter.textContent = 'Intro';
+    else if(s.classList.contains('done')) counter.textContent = 'Done';
+    else if(s.dataset.key) counter.textContent = `${questionPosition(s)} / ${questionSlides.length}`;
+    else counter.textContent = '—';
+    // nav buttons
+    prevBtn.disabled = idx===0;
+    nextBtn.disabled = s.classList.contains('done');
+    if(s.classList.contains('done')){ renderSummary(); submitPayload(); }
+  }
+
+  function saveCurrent(){
+    const s = slides[idx];
+    const key = s.dataset.key;
+    if(!key) return;
+    const range = s.querySelector('input[type=range]');
+    if(range){ answers[key] = range.value; return; }
+    const input = s.querySelector('textarea, input[type=text]');
+    if(input) answers[key] = input.value.trim();
+    // scale/choices values are already stored on click
+  }
+
+  // Slider: live emoji + label updates
+  const SLIDER_STATES = [
+    {max:1, emj:'🧘', lbl:'Deep focus — barely any switching'},
+    {max:3, emj:'🙂', lbl:'Light switching, mostly focused'},
+    {max:5, emj:'😐', lbl:'Some switching, manageable'},
+    {max:7, emj:'😵‍💫', lbl:'A lot of switching — hard to get into flow'},
+    {max:9, emj:'🤯', lbl:'Way too much — constantly interrupted'},
+    {max:10, emj:'🌀', lbl:'Total chaos'},
+  ];
+  function stateFor(v){
+    v = Number(v);
+    for(const st of SLIDER_STATES) if(v <= st.max) return st;
+    return SLIDER_STATES[SLIDER_STATES.length-1];
+  }
+  function updateSlider(slide){
+    const range = slide.querySelector('input[type=range]');
+    if(!range) return;
+    const v = Number(range.value);
+    const st = stateFor(v);
+    const pct = ((v - range.min) / (range.max - range.min)) * 100;
+    range.style.setProperty('--pct', pct + '%');
+    const numEl = slide.querySelector('[data-slider-num]');
+    const emjEl = slide.querySelector('[data-slider-emj]');
+    const lblEl = slide.querySelector('[data-slider-lbl]');
+    if(numEl) numEl.textContent = v;
+    if(emjEl) emjEl.textContent = st.emj;
+    if(lblEl) lblEl.textContent = st.lbl;
+    const key = slide.dataset.key;
+    if(key) answers[key] = String(v);
+  }
+  document.querySelectorAll('input[type=range]').forEach(r=>{
+    r.addEventListener('input', ()=>updateSlider(r.closest('.slide')));
+  });
+
+  // Scale + choices click handling (auto-advance on select)
+  document.querySelectorAll('.scale, .choices').forEach(group=>{
+    group.addEventListener('click', (e)=>{
+      const b = e.target.closest('button[data-val]');
+      if(!b) return;
+      const s = b.closest('.slide');
+      const key = s.dataset.key;
+      const isOther = b.dataset.other === '1';
+      const otherInput = s.querySelector('input[type=text][id$="_other"]');
+      if(key){
+        if(isOther){
+          const typed = (otherInput?.value || '').trim();
+          answers[key] = typed ? 'Other: ' + typed : 'Other';
+        } else {
+          answers[key] = b.dataset.val;
+        }
+      }
+      group.querySelectorAll('button[data-val]').forEach(x=>{
+        x.classList.toggle('selected', x===b);
+        x.setAttribute('aria-checked', x===b ? 'true' : 'false');
+      });
+      if(otherInput){
+        if(isOther){
+          otherInput.style.display = 'block';
+          setTimeout(()=>otherInput.focus(), 80);
+          return; // don't auto-advance; wait for Enter or OK
+        } else {
+          otherInput.style.display = 'none';
+        }
+      }
+      setTimeout(()=>next(), 260);
+    });
+  });
+
+  // Keep Other input in sync with answers
+  document.querySelectorAll('input[type=text][id$="_other"]').forEach(inp=>{
+    inp.addEventListener('input', ()=>{
+      const s = inp.closest('.slide');
+      const key = s?.dataset.key;
+      if(!key) return;
+      const typed = inp.value.trim();
+      answers[key] = typed ? 'Other: ' + typed : 'Other';
+    });
+  });
+
+  function next(){
+    saveCurrent();
+    show(idx+1);
+  }
+  function prev(){
+    saveCurrent();
+    show(idx-1);
+  }
+
+  // Click handlers
+  document.querySelectorAll('[data-next]').forEach(b=>b.addEventListener('click', next));
+  nextBtn.addEventListener('click', next);
+  prevBtn.addEventListener('click', prev);
+
+  // Keyboard: Enter advances, Shift+Enter = newline, arrows = navigate.
+  // Digits 1–5 select on scale slides.
+  document.addEventListener('keydown', (e)=>{
+    const inField = /^(TEXTAREA|INPUT)$/.test(document.activeElement?.tagName || '');
+    const cur = slides[idx];
+    const group = cur.querySelector('.scale, .choices');
+    const rangeOnSlide = cur.querySelector('input[type=range]');
+
+    // Number-key shortcuts for scale / choices (not when there's a slider)
+    if(group && !rangeOnSlide && /^[0-9]$/.test(e.key) && !e.shiftKey && !e.metaKey && !e.ctrlKey){
+      const buttons = group.querySelectorAll('button[data-val]');
+      const pos = e.key === '0' ? 9 : parseInt(e.key, 10) - 1;
+      if(pos >= 0 && pos < buttons.length){
+        e.preventDefault();
+        buttons[pos].click();
+        return;
+      }
+    }
+
+    if(e.key === 'Enter' && !e.shiftKey){
+      e.preventDefault();
+      next();
+    } else if(e.key === 'ArrowDown' || (e.key === 'Tab' && !e.shiftKey && !inField)){
+      e.preventDefault(); next();
+    } else if(e.key === 'ArrowUp' || (e.key === 'Tab' && e.shiftKey && !inField)){
+      e.preventDefault(); prev();
+    }
+  });
+
+  // Persist in localStorage-ish — but we were told NOT to use localStorage in artifacts.
+  // Keep answers in-memory only. Restart wipes them.
+
+  // Labels for summary
+  const LABELS = {
+    bench_rating: "Pulse check · Rating vs. previous company",
+    bench_strong: "Pulse check · Where we're strong",
+    bench_weak: "Pulse check · Where we're weak",
+    plan_clarity: "Planning · Clarity on the why",
+    collab_product: "Planning · What you need from Product",
+    plan_improve: "Planning · How to improve the process",
+    rel_difficulty: "Releasing · How hard is prod?",
+    rel_quality: "Releasing · Quality of what we ship",
+    rel_change: "Releasing · What would you change?",
+    data_should: "Data · What we should be tracking",
+    plan_context: "Speed · Context-switching",
+    unplanned: "Speed · Time on unplanned work",
+    speed: "Speed · What would help us ship faster",
+    invest_deprioritise: "Investment · Deprioritise or stop",
+    ai_agents: "AI · Agents for internal execution",
+    hire_role: "Team · If we could hire 1 more role",
+    open: "Open floor · Anything we forgot to ask",
+    bonus: "Bonus · Free week",
+    name: "Name"
+  };
+
+  function buildPlainText(){
+    const lines = [];
+    lines.push("BILLIE — R&D Ways of Working Survey");
+    lines.push("Submitted: " + new Date().toLocaleString());
+    if(answers.name) lines.push("From: " + answers.name);
+    lines.push("");
+    for(const key of Object.keys(LABELS)){
+      if(key === 'name') continue;
+      lines.push("## " + LABELS[key]);
+      lines.push(answers[key] && answers[key].length ? answers[key] : "(no answer)");
+      lines.push("");
+    }
+    return lines.join("\n");
+  }
+
+  function renderSummary(){
+    const el = document.getElementById('summary');
+    el.innerHTML = '';
+    for(const key of Object.keys(LABELS)){
+      const h = document.createElement('h4');
+      h.textContent = LABELS[key];
+      const p = document.createElement('p');
+      const val = (answers[key]||'').trim();
+      if(val) p.textContent = val;
+      else { p.textContent = '— no answer —'; p.className = 'empty'; }
+      el.appendChild(h); el.appendChild(p);
+    }
+  }
+
+  function flashToast(msg){
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(()=>toast.classList.remove('show'), 1800);
+  }
+
+  // Build a machine-readable response payload for the board + webhook
+  function buildResponsePayload(){
+    const payload = {
+      name: (answers.name || '').trim(),
+      submittedAt: new Date().toISOString(),
+      answers: {},
+    };
+    for(const key of Object.keys(LABELS)){
+      if(key === 'name') continue;
+      const v = answers[key];
+      if(v != null && String(v).trim() !== '') payload.answers[key] = v;
+    }
+    return payload;
+  }
+  function utf8ToBase64(str){
+    return btoa(unescape(encodeURIComponent(str)));
+  }
+  // Fire-and-forget POST to WEBHOOK_URL on completion, if configured.
+  function submitPayload(){
+    if(!WEBHOOK_URL) return;
+    try{
+      fetch(WEBHOOK_URL, {
+        method:'POST', mode:'no-cors',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(buildResponsePayload()),
+      });
+    }catch(e){ /* non-blocking */ }
+  }
+
+  // Init
+  show(0);
+</script>
+</body>
+</html>
