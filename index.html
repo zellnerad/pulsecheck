@@ -138,22 +138,21 @@
     position:fixed;right:24px;bottom:24px;display:flex;gap:10px;z-index:10;
   }
   .nav button{
-    background:var(--ink);border:none;cursor:pointer;
-    color:#fff;display:inline-flex;align-items:center;gap:8px;
-    padding:14px 20px;border-radius:12px;font:inherit;font-weight:600;font-size:14px;
-    box-shadow:0 6px 20px rgba(40,40,40,.18), 0 2px 4px rgba(40,40,40,.08);
-    transition:transform .12s ease, box-shadow .15s ease, background .2s ease, opacity .2s ease;
+    background:#fff;border:1.5px solid var(--ink);cursor:pointer;
+    color:var(--ink);display:inline-flex;align-items:center;gap:8px;
+    padding:12px 18px;border-radius:12px;font:inherit;font-weight:600;font-size:14px;
+    box-shadow:0 2px 8px rgba(40,40,40,.06);
+    transition:transform .12s ease, box-shadow .15s ease, background .2s ease, color .2s ease, border-color .2s ease, opacity .2s ease;
   }
-  .nav button:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 10px 28px rgba(40,40,40,.22), 0 3px 6px rgba(40,40,40,.10);background:#000}
+  .nav button:hover:not(:disabled){transform:translateY(-2px);background:var(--ink);color:#fff;box-shadow:0 8px 22px rgba(40,40,40,.18)}
   .nav button:active:not(:disabled){transform:translateY(0)}
-  .nav button:disabled{opacity:.3;cursor:not-allowed;background:#c6c6c6;box-shadow:none}
+  .nav button:disabled{opacity:.35;cursor:not-allowed;border-color:#d0d0d0;color:#aaa;box-shadow:none}
   .nav button svg{width:16px;height:16px;stroke-width:2.5}
   .nav button .kbd{
-    font-size:11px;font-weight:500;opacity:.7;
-    border:1px solid rgba(255,255,255,.35);border-radius:4px;padding:1px 5px;
+    font-size:11px;font-weight:500;opacity:.65;
+    border:1px solid currentColor;border-radius:4px;padding:1px 5px;
     font-family:ui-monospace,monospace;letter-spacing:.02em;
   }
-  .nav button:disabled .kbd{border-color:rgba(255,255,255,.2)}
   @media (max-width:560px){
     .nav{right:14px;bottom:14px;gap:8px}
     .nav button{padding:12px 14px;font-size:13px}
@@ -806,10 +805,11 @@
     show(idx-1);
   }
 
-  // Click handlers
-  document.querySelectorAll('[data-next]').forEach(b=>b.addEventListener('click', next));
-  nextBtn.addEventListener('click', next);
-  prevBtn.addEventListener('click', prev);
+  // Click handlers — blur after click so keyboard Enter doesn't re-trigger the button
+  function wrap(fn){ return function(e){ e.currentTarget?.blur?.(); fn(); }; }
+  document.querySelectorAll('[data-next]').forEach(b=>b.addEventListener('click', wrap(next)));
+  nextBtn.addEventListener('click', wrap(next));
+  prevBtn.addEventListener('click', wrap(prev));
 
   // Keyboard: Enter advances, Shift+Enter = newline, arrows = navigate.
   // Digits 1–5 select on scale slides.
