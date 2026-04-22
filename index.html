@@ -661,7 +661,7 @@
   // WEBHOOK_URL: OPTIONAL. If set (e.g. a Google Apps Script, Formspree, or Zapier URL),
   //              responses will also POST to it so the board can fetch them with ?api=WEBHOOK_URL.
   const BOARD_URL   = "./board.html";
-  const WEBHOOK_URL = "";
+  const BLOB_URL    = "https://jsonblob.com/api/jsonBlob/019db56f-a0e8-7919-a2af-b25f74054c24";
 
   const slides = Array.from(document.querySelectorAll('.slide'));
   const bar = document.getElementById('bar');
@@ -936,16 +936,22 @@
   function utf8ToBase64(str){
     return btoa(unescape(encodeURIComponent(str)));
   }
-  // Fire-and-forget POST to WEBHOOK_URL on completion, if configured.
-  function submitPayload(){
-    if(!WEBHOOK_URL) return;
+  // Append this response to the shared jsonblob (GET → push → PUT).
+  let _submitted = false;
+  async function submitPayload(){
+    if(_submitted || !BLOB_URL) return;
+    _submitted = true;
     try{
-      fetch(WEBHOOK_URL, {
-        method:'POST', mode:'no-cors',
+      const res = await fetch(BLOB_URL, { cache:'no-cache' });
+      const doc = res.ok ? await res.json() : { responses:[] };
+      if(!Array.isArray(doc.responses)) doc.responses = [];
+      doc.responses.push(buildResponsePayload());
+      await fetch(BLOB_URL, {
+        method:'PUT',
         headers:{'Content-Type':'application/json'},
-        body: JSON.stringify(buildResponsePayload()),
+        body: JSON.stringify(doc),
       });
-    }catch(e){ /* non-blocking */ }
+    }catch(e){ console.warn('submit failed', e); _submitted = false; }
   }
 
   // Init

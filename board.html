@@ -533,8 +533,7 @@
 
   document.getElementById('refreshBtn').addEventListener('click', ()=>{
     const url = new URL(location.href);
-    const api = url.searchParams.get('api');
-    if(!api){ flashToast('No ?api=URL configured — pasting stays the fallback'); return; }
+    const api = url.searchParams.get('api') || DEFAULT_API;
     state.responses = [];
     loadFromApi(api).then(render);
   });
@@ -543,10 +542,12 @@
     if(e.key === 'Escape') closeModals();
   });
 
+  const DEFAULT_API = "https://jsonblob.com/api/jsonBlob/019db56f-a0e8-7919-a2af-b25f74054c24";
+
   /* ---------- Boot ---------- */
   (async function boot(){
     const url = new URL(location.href);
-    const api = url.searchParams.get('api');
+    const api = url.searchParams.get('api') || DEFAULT_API;
     const demoFlag = url.searchParams.get('demo');
     let loaded = false;
     if(api){ await loadFromApi(api); loaded = state.responses.length > 0; }
