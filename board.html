@@ -438,7 +438,23 @@
     try{
       const res = await fetch(url, { cache:'no-cache' });
       if(!res.ok) throw new Error('HTTP ' + res.status);
-      const data = await res.json();
+      const ct = res.headers.get('content-type') || '';
+      const text = await res.text();
+      // ntfy.sh returns application/x-ndjson — one message per line
+      if(ct.includes('ndjson') || url.includes('ntfy.sh')){
+        text.split('\n').filter(l=>l.trim()).forEach(line=>{
+          try{
+            const evt = JSON.parse(line);
+            if(evt.event && evt.event !== 'message') return;
+            const msg = typeof evt.message === 'string' ? evt.message : '';
+            if(!msg) return;
+            const payload = JSON.parse(msg);
+            addResponse(payload);
+          }catch(_){}
+        });
+        return;
+      }
+      const data = JSON.parse(text);
       if(Array.isArray(data)) data.forEach(addResponse);
       else if(data.responses && Array.isArray(data.responses)) data.responses.forEach(addResponse);
       else addResponse(data);
@@ -542,7 +558,7 @@
     if(e.key === 'Escape') closeModals();
   });
 
-  const DEFAULT_API = "https://jsonblob.com/api/jsonBlob/019db56f-a0e8-7919-a2af-b25f74054c24";
+  const DEFAULT_API = "https://ntfy.sh/billie-rd-pulsecheck-2026q2/json?poll=1&since=all";
 
   /* ---------- Boot ---------- */
   (async function boot(){
