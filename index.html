@@ -255,11 +255,17 @@
   }
   .muscle-rate .m-emj{font-size:36px;line-height:1}
   .muscle-rate .m-lbl{font-size:12px;font-weight:600;color:var(--ink)}
-  .muscle-rate button:hover{
-    transform:translateY(-2px) scale(1.05);
-    border-color:var(--accent);border-style:solid;background:var(--accent-soft);
-    filter:grayscale(.3);opacity:.9;box-shadow:0 4px 12px rgba(0,0,0,.06);
+  /* Star-rating hover cascade: hovering over button N lights up 1..N */
+  .muscle-rate:hover button{
+    filter:grayscale(1);opacity:.5;border-style:dashed;
+    border-color:var(--border);background:#fff;
   }
+  .muscle-rate:hover button:hover,
+  .muscle-rate:hover button:has(~ button:hover){
+    filter:none;opacity:1;border-style:solid;
+    border-color:var(--accent);background:var(--accent-soft);
+  }
+  .muscle-rate button:hover{transform:translateY(-1px)}
   .muscle-rate button::after{
     content:attr(data-tip);
     position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%) translateY(4px);
