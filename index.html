@@ -242,6 +242,12 @@
   .scale button:nth-child(3) .emj{opacity:.85}
   .scale button:nth-child(4) .emj{opacity:1}
   .scale button:nth-child(5) .emj{opacity:1;font-size:32px}
+  .scale-muscle button .emj{font-size:14px!important;letter-spacing:-2px;opacity:1!important;filter:none!important;line-height:1.1;word-break:break-all;text-align:center;max-width:100%;white-space:normal}
+  .scale-muscle button:nth-child(1) .emj{font-size:22px!important}
+  .scale-muscle button:nth-child(2) .emj{font-size:18px!important}
+  .scale-muscle button:nth-child(3) .emj{font-size:15px!important}
+  .scale-muscle button:nth-child(4) .emj{font-size:13px!important}
+  .scale-muscle button:nth-child(5) .emj{font-size:12px!important}
   .scale button.selected .emj{opacity:1}
   .scale button .num{font-size:14px;font-weight:600;color:var(--ink)}
   .scale-legend{
@@ -386,12 +392,12 @@
   <section class="slide" data-section="Pulse check" data-key="bench_rating">
     <div class="kicker"><span>Pulse check</span><span class="n">· 1 of 3</span></div>
     <h2 class="q">How would you rate our execution level?</h2>
-    <div class="scale" role="radiogroup" aria-label="Execution level">
-      <button type="button" data-val="1" role="radio" aria-checked="false"><span class="emj">🦴</span><span class="num">1</span></button>
-      <button type="button" data-val="2" role="radio" aria-checked="false"><span class="emj">🤏</span><span class="num">2</span></button>
-      <button type="button" data-val="3" role="radio" aria-checked="false"><span class="emj">💪</span><span class="num">3</span></button>
-      <button type="button" data-val="4" role="radio" aria-checked="false"><span class="emj">💪</span><span class="num">4</span></button>
-      <button type="button" data-val="5" role="radio" aria-checked="false"><span class="emj">💪</span><span class="num">5</span></button>
+    <div class="scale scale-muscle" role="radiogroup" aria-label="Execution level">
+      <button type="button" data-val="1" role="radio" aria-checked="false"><span class="emj">💪</span><span class="num">1</span></button>
+      <button type="button" data-val="2" role="radio" aria-checked="false"><span class="emj">💪💪</span><span class="num">2</span></button>
+      <button type="button" data-val="3" role="radio" aria-checked="false"><span class="emj">💪💪💪</span><span class="num">3</span></button>
+      <button type="button" data-val="4" role="radio" aria-checked="false"><span class="emj">💪💪💪💪</span><span class="num">4</span></button>
+      <button type="button" data-val="5" role="radio" aria-checked="false"><span class="emj">💪💪💪💪💪</span><span class="num">5</span></button>
     </div>
     <div class="scale-legend"><span>Weak</span><span>Strong</span></div>
     <div class="actions"><button class="btn" data-next>OK <span class="enter">↵</span></button><span class="hint">Tap a choice or press 1–5</span></div>
