@@ -196,6 +196,8 @@
   <div class="bar-right">
     <button class="btn" id="refreshBtn" title="Refresh from backend">↻ Refresh</button>
     <button class="btn" id="addBtn">+ Paste response</button>
+    <button class="btn" id="exportBtn" title="Download all responses this browser has seen">⤓ Export</button>
+    <button class="btn" id="clearBtn" title="Clear archived responses from this browser">🗑 Clear</button>
     <button class="btn primary" id="shareBtn">Share this board</button>
   </div>
 </header>
@@ -403,15 +405,41 @@
   }
 
   /* ---------- Loading responses ---------- */
+  const ARCHIVE_KEY = 'billie-rd-pulsecheck-archive-v1';
+  function loadArchive(){
+    try{ return JSON.parse(localStorage.getItem(ARCHIVE_KEY) || '[]'); }catch(_){ return []; }
+  }
+  function saveArchive(list){
+    try{ localStorage.setItem(ARCHIVE_KEY, JSON.stringify(list)); }catch(_){}
+  }
+  function archiveResponse(r){
+    const list = loadArchive();
+    const fp = (r.submittedAt||'') + '|' + JSON.stringify(r.answers||{});
+    if(list.some(x => ((x.submittedAt||'') + '|' + JSON.stringify(x.answers||{})) === fp)) return;
+    list.push(r);
+    saveArchive(list);
+  }
   function addResponse(r){
     // basic sanity
     if(!r || typeof r !== 'object' || !r.answers) return false;
-    state.responses.push({
+    const clean = {
       name: r.name || '',
       submittedAt: r.submittedAt || new Date().toISOString(),
       answers: r.answers || {},
-    });
+    };
+    state.responses.push(clean);
+    archiveResponse(clean);
     return true;
+  }
+  function loadFromArchive(){
+    const list = loadArchive();
+    list.forEach(r=>{
+      state.responses.push({
+        name: r.name || '',
+        submittedAt: r.submittedAt || new Date().toISOString(),
+        answers: r.answers || {},
+      });
+    });
   }
 
   function loadFromUrlHash(){
@@ -542,8 +570,37 @@
     const url = new URL(location.href);
     const api = url.searchParams.get('api') || DEFAULT_API;
     state.responses = [];
+    loadFromArchive();
     loadFromApi(api).then(render);
   });
+
+  const clearBtn = document.getElementById('clearBtn');
+  if(clearBtn){
+    clearBtn.addEventListener('click', ()=>{
+      const n = loadArchive().length;
+      const msg = n > 0
+        ? `Clear all ${n} archived response${n===1?'':'s'} from this browser?\n\n(Live responses on the server aren't affected — they'll reload on next refresh.)`
+        : 'Clear all responses on the board?';
+      if(!confirm(msg)) return;
+      saveArchive([]);
+      state.responses = [];
+      render();
+      flashToast('Cleared');
+    });
+  }
+
+  const exportBtn = document.getElementById('exportBtn');
+  if(exportBtn){
+    exportBtn.addEventListener('click', ()=>{
+      const list = loadArchive();
+      const blob = new Blob([JSON.stringify(list, null, 2)], { type:'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `pulsecheck-archive-${new Date().toISOString().slice(0,10)}.json`;
+      document.body.appendChild(a); a.click(); a.remove();
+      flashToast(`Exported ${list.length} response${list.length===1?'':'s'}`);
+    });
+  }
 
   document.addEventListener('keydown', (e)=>{
     if(e.key === 'Escape') closeModals();
@@ -557,7 +614,9 @@
     const api = url.searchParams.get('api') || DEFAULT_API;
     const demoFlag = url.searchParams.get('demo');
     let loaded = false;
-    if(api){ await loadFromApi(api); loaded = state.responses.length > 0; }
+    loadFromArchive();
+    if(state.responses.length > 0) loaded = true;
+    if(api){ await loadFromApi(api); if(state.responses.length > 0) loaded = true; }
     if(loadFromUrlHash()) loaded = true;
     if(!loaded && demoFlag === '1'){ loadDemo(); return; }
     render();
